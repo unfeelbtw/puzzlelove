@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Jigsaw Puzzle</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body, html {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            font-family: 'Inter', sans-serif;
+            background: #050d1a;
+            touch-action: none;
+        }
+
+        #bg {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 15% 50%, rgba(0, 80, 160, 0.18) 0%, transparent 70%),
+                radial-gradient(ellipse 60% 80% at 85% 30%, rgba(0, 50, 120, 0.14) 0%, transparent 70%),
+                radial-gradient(ellipse 100% 100% at 50% 100%, rgba(0, 20, 60, 0.5) 0%, transparent 60%),
+                linear-gradient(160deg, #07111f 0%, #040c18 50%, #020810 100%);
+        }
+
+        #bg::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            z-index: 1;
+            touch-action: none;
+        }
+
+        /* HUD — only restart button */
+        #hud {
+            position: fixed;
+            bottom: clamp(14px, 3vw, 28px);
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            background: rgba(10, 20, 40, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border-radius: 18px;
+            padding: clamp(8px, 1.5vw, 10px) clamp(14px, 2.5vw, 20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.06);
+        }
+
+        .hud-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.75);
+            font-family: 'Inter', sans-serif;
+            font-size: clamp(11px, 1.5vw, 13px);
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            padding: clamp(8px, 1.2vw, 10px) clamp(18px, 2.5vw, 28px);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        .hud-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: rgba(255, 255, 255, 0.95);
+            border-color: rgba(255, 255, 255, 0.18);
+        }
+
+        .hud-btn:active {
+            transform: scale(0.96);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Progress counter */
+        #progress-wrap {
+            position: fixed;
+            top: clamp(12px, 2.5vw, 22px);
+            right: clamp(12px, 2.5vw, 28px);
+            z-index: 10;
+            background: rgba(10, 20, 40, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-radius: 14px;
+            padding: clamp(8px, 1.5vw, 12px) clamp(12px, 2vw, 18px);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        #progress-label {
+            font-size: clamp(9px, 1.2vw, 10px);
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.35);
+        }
+
+        #progress-count {
+            font-size: clamp(16px, 2.5vw, 22px);
+            font-weight: 300;
+            color: rgba(255,255,255,0.85);
+            letter-spacing: -0.02em;
+            line-height: 1;
+        }
+
+        #progress-bar-track {
+            width: clamp(50px, 8vw, 80px);
+            height: 3px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        #progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, rgba(60,120,255,0.8), rgba(120,180,255,0.9));
+            border-radius: 2px;
+            transition: width 0.4s ease;
+        }
+
+        /* Win screen */
+        #win-screen {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 20;
+            align-items: center;
+            justify-content: center;
+            background: rgba(2, 8, 20, 0.7);
+            backdrop-filter: blur(12px);
+            padding: 20px;
+        }
+
+        #win-screen.visible {
+            display: flex;
+        }
+
+        #win-card {
+            background: rgba(10, 20, 42, 0.8);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            padding: clamp(28px, 5vw, 40px) clamp(32px, 6vw, 52px);
+            text-align: center;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+            max-width: 90vw;
+        }
+
+        #win-card h2 {
+            font-size: clamp(20px, 4vw, 28px);
+            font-weight: 300;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 8px;
+            letter-spacing: -0.02em;
+        }
+
+        #win-card p {
+            font-size: clamp(11px, 1.5vw, 13px);
+            color: rgba(255,255,255,0.35);
+            margin-bottom: 24px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="bg"></div>
+    <canvas id="puzzleCanvas"></canvas>
+
+    <div id="progress-wrap">
+        <span id="progress-label">Собрано</span>
+        <span id="progress-count">0 / 0</span>
+        <div id="progress-bar-track"><div id="progress-bar-fill"></div></div>
+    </div>
+
+    <div id="hud">
+        <button class="hud-btn" id="btn-restart">Заново</button>
+    </div>
+
+    <div id="win-screen">
+        <div id="win-card">
+            <h2>Умничка!!!!</h2>
+            <p>Я люблю тебя так, что слова неуместны,</p>
+            <p>Ты по взгляду прочтешь все молчанье основ.</p>
+            <p>От кипения чувств даже в небе мне тесно,</p>
+            <p>И в зрачках ясным пламенем плещет любовь.</p>
+            <p>Мне не нужно наград и не нужно признаний,</p>
+            <p>Лишь бы чувствовать рядом дыханье твое.</p>
+            <p>Без упреков, без боли, без лишних терзаний</p>
+            <p>Ты — мой самый счастливый и светлый рассвет.</p>
+            <p>P.S. я знаю, что ты любишь пазлы)))</p>
+            <button class="hud-btn" id="btn-win-restart">Играть снова</button>
+        </div>
+    </div>
+
+    <script src="puzzle.js"></script>
+
+    <script>
+        let game = null;
+        let totalPieces = 0;
+        let progressInterval = null;
+
+        /* ── Progress ── */
+        function updateProgress() {
+            if (!game || game.pieces.length === 0) return;
+            let snapped = 0;
+            for (let col of game.pieces)
+                for (let piece of col)
+                    if (piece.snapped) snapped++;
+
+            document.getElementById('progress-count').textContent = `${snapped} / ${totalPieces}`;
+            const pct = totalPieces > 0 ? (snapped / totalPieces) * 100 : 0;
+            document.getElementById('progress-bar-fill').style.width = pct + '%';
+
+            if (snapped === totalPieces && totalPieces > 0)
+                document.getElementById('win-screen').classList.add('visible');
+        }
+
+        /* ── Dashed border overlay drawn on top of canvas each frame ── */
+        function drawBoardBorder(ctx, x, y, w, h, scale) {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+            ctx.lineWidth = 2.5 * scale;
+            ctx.setLineDash([14 * scale, 10 * scale]);
+            ctx.lineDashOffset = 0;
+            ctx.lineJoin = 'miter';
+            ctx.beginPath();
+            ctx.rect(x, y, w, h);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        /* ── Touch support ── */
+        function addTouchSupport(puzzle) {
+            const canvas = puzzle.canvas;
+
+            function getTouchPos(touch) {
+                const rect = canvas.getBoundingClientRect();
+                return {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY,
+                    x: (touch.clientX - rect.left) * puzzle.scaleMultiplier,
+                    y: (touch.clientY - rect.top) * puzzle.scaleMultiplier
+                };
+            }
+
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (e.touches.length !== 1) return;
+                const t = getTouchPos(e.touches[0]);
+                puzzle.selected = puzzle.getClickedPiece(t);
+                if (puzzle.selected) {
+                    puzzle.selected.offset = {
+                        x: t.clientX - puzzle.selected.x / puzzle.scaleMultiplier,
+                        y: t.clientY - puzzle.selected.y / puzzle.scaleMultiplier
+                    };
+                }
+            }, { passive: false });
+
+            canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (!puzzle.selected || e.touches.length !== 1) return;
+                const rect = canvas.getBoundingClientRect();
+                const touch = e.touches[0];
+                puzzle.selected.x = (touch.clientX - rect.left) * puzzle.scaleMultiplier - puzzle.selected.offset.x;
+                puzzle.selected.y = (touch.clientY - rect.top) * puzzle.scaleMultiplier - puzzle.selected.offset.y;
+                puzzle.currentClientX = (touch.clientX - rect.left) * puzzle.scaleMultiplier;
+                puzzle.currentClientY = (touch.clientY - rect.top) * puzzle.scaleMultiplier;
+            }, { passive: false });
+
+            canvas.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                if (!puzzle.selected) return;
+                if (puzzle.selected.isClose()) puzzle.selected.snap();
+                puzzle.selected = null;
+            }, { passive: false });
+        }
+
+        /* ── Init ── */
+        function initGame() {
+            document.getElementById('win-screen').classList.remove('visible');
+            if (progressInterval) clearInterval(progressInterval);
+
+            const canvas = document.getElementById('puzzleCanvas');
+            const img = new Image();
+            img.src = 'photo.jpg';
+
+            img.onload = () => {
+                // Adapt grid to screen size
+                const isMobile = window.innerWidth < 600;
+                const rows = isMobile ? 6 : 15;
+                const cols = isMobile ? 6 : 15;
+
+                game = new Puzzle({
+                    canvas: canvas,
+                    image: img,
+                    rows: rows,
+                    columns: cols,
+                    hintsEnabled: false,
+                    maxImageWidth: isMobile ? 85 : 50,
+                    maxImageHeight: isMobile ? 60 : 75
+                });
+
+                game.generatePieces();
+                game.randomizePieces();
+
+                totalPieces = game.rows * game.columns;
+                document.getElementById('progress-count').textContent = `0 / ${totalPieces}`;
+
+                // Patch draw() to also render dashed border
+                const origDraw = game.draw.bind(game);
+                game.draw = function () {
+                    origDraw.call(this);
+                    // draw border after pieces — we inject into the rAF loop via override below
+                };
+
+                // Override requestAnimationFrame loop: draw border after each frame
+                const origRAF = game.draw;
+                game.draw = function () {
+                    // call original (which calls clearRect, draws pieces, then schedules next rAF)
+                    origDraw.call(this);
+                    // draw dashed border on top
+                    drawBoardBorder(
+                        this.ctx,
+                        this.imgX + this.translate.x,
+                        this.imgY + this.translate.y,
+                        this.imgWidth,
+                        this.imgHeight,
+                        this.scaleMultiplier
+                    );
+                };
+
+                game.draw();
+                addTouchSupport(game);
+                progressInterval = setInterval(updateProgress, 500);
+            };
+        }
+
+        document.getElementById('btn-restart').addEventListener('click', initGame);
+        document.getElementById('btn-win-restart').addEventListener('click', initGame);
+
+        window.addEventListener('load', initGame);
+
+        // On resize: only rescale piece positions, don't reset the game
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(onResize, 300);
+        });
+
+        function onResize() {
+            if (!game || game.pieces.length === 0) return;
+
+            // Save snapped state before canvas resize
+            const snapState = [];
+            for (let col of game.pieces)
+                for (let piece of col)
+                    snapState.push(piece.snapped);
+
+            // Remember old image rect
+            const oldX = game.imgX, oldY = game.imgY;
+            const oldW = game.imgWidth, oldH = game.imgHeight;
+
+            // Resize canvas (puzzle.draw() does this each frame but let's force it now)
+            game.canvas.width = window.innerWidth * game.scaleMultiplier;
+            game.canvas.height = window.innerHeight * game.scaleMultiplier;
+
+            // Recalculate image rect based on new window size
+            const isMobile = window.innerWidth < 600;
+            game.maxImageWidth  = isMobile ? 85 : 50;
+            game.maxImageHeight = isMobile ? 60 : 75;
+
+            const img = game.img;
+            let newX, newY, newW, newH;
+            if (img.width > img.height) {
+                let w = game.canvas.width * (game.maxImageWidth / 100);
+                let h, ratio = img.width / img.height;
+                do { h = w / ratio; if (h > game.canvas.height * (game.maxImageHeight / 100)) w--; }
+                while (h > game.canvas.height * (game.maxImageHeight / 100));
+                newX = game.canvas.width / 2 - w / 2;
+                newY = game.canvas.height / 2 - h / 2;
+                newW = w; newH = h;
+            } else {
+                let h = game.canvas.height * (game.maxImageHeight / 100);
+                let w, ratio = img.height / img.width;
+                do { w = h / ratio; if (w > game.canvas.width * (game.maxImageWidth / 100)) h--; }
+                while (w > game.canvas.width * (game.maxImageWidth / 100));
+                newX = game.canvas.width / 2 - w / 2;
+                newY = game.canvas.height / 2 - h / 2;
+                newW = w; newH = h;
+            }
+
+            // Scale factors
+            const sx = newW / oldW;
+            const sy = newH / oldH;
+
+            // Remap every piece position proportionally
+            let i = 0;
+            for (let col of game.pieces) {
+                for (let piece of col) {
+                    // Map relative to old image origin, scale, map to new origin
+                    const relX = piece.x - oldX;
+                    const relY = piece.y - oldY;
+                    piece.x = newX + relX * sx;
+                    piece.y = newY + relY * sy;
+
+                    // Update correct positions
+                    const relCX = piece.xCorrect - oldX;
+                    const relCY = piece.yCorrect - oldY;
+                    piece.xCorrect = newX + relCX * sx;
+                    piece.yCorrect = newY + relCY * sy;
+
+                    // Update piece dimensions
+                    piece.width  = newW / game.columns;
+                    piece.height = newH / game.rows;
+
+                    // Restore snapped flag (canvas resize may clear it if snap() is called)
+                    piece.snapped = snapState[i++];
+
+                    // Re-snap snapped pieces to exact correct position
+                    if (piece.snapped) {
+                        piece.x = piece.xCorrect;
+                        piece.y = piece.yCorrect;
+                    }
+                }
+            }
+
+            // Update game's stored image rect
+            game.imgX = newX; game.imgY = newY;
+            game.imgWidth = newW; game.imgHeight = newH;
+        }
+    </script>
+</body>
+</html>
