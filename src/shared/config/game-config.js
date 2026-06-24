@@ -2,7 +2,7 @@ export const GAME_CONFIG = {
     // Grid sizes (number of puzzles)
     grid: {
         desktop: { rows: 15, cols: 15 },
-        mobile: { rows: 6, cols: 6 }
+        mobile: { rows: 15, cols: 15 }
     },
     // Theme colors for the website
     colors: {
