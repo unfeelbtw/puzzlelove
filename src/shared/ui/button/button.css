@@ -1,0 +1,48 @@
+.button {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.75);
+    font-family: 'Inter', sans-serif;
+    font-size: clamp(11px, 1.5vw, 13px);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    padding: clamp(8px, 1.2vw, 10px) clamp(18px, 2.5vw, 28px);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    outline: none;
+}
+
+.button:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.95);
+    border-color: rgba(255, 255, 255, 0.18);
+}
+
+.button:active {
+    transform: scale(0.96);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.button--primary {
+    background: rgba(var(--color-primary), 0.2);
+    border-color: rgba(var(--color-primary), 0.4);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.button--primary:hover {
+    background: rgba(var(--color-primary), 0.35);
+    border-color: rgba(var(--color-primary), 0.6);
+    color: #fff;
+}
+
+.button--primary:active {
+    background: rgba(var(--color-primary), 0.45);
+}

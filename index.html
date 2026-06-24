@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Jigsaw Puzzle</title>
+</head>
+<body>
+
+    <div class="page-bg"></div>
+    <canvas id="puzzleCanvas" class="game-canvas"></canvas>
+
+    <div class="progress-bar">
+        <span class="progress-bar__label">Собрано</span>
+        <span class="progress-bar__count">0 / 0</span>
+        <div class="progress-bar__track">
+            <div class="progress-bar__fill"></div>
+        </div>
+    </div>
+
+    <div class="hud-container">
+        <button class="button" id="btn-restart">Заново</button>
+    </div>
+
+    <div class="win-modal">
+        <div class="win-modal__card">
+            <h2 class="win-modal__title">Умничка!!!!</h2>
+            <p class="win-modal__text">Я люблю тебя так, что слова неуместны,</p>
+            <p class="win-modal__text">Ты по взгляду прочтешь все молчанье основ.</p>
+            <p class="win-modal__text">От кипения чувств даже в небе мне тесно,</p>
+            <p class="win-modal__text">И в зрачках ясным пламенем плещет любовь.</p>
+            <p class="win-modal__text">Мне не нужно наград и не нужно признаний,</p>
+            <p class="win-modal__text">Лишь бы чувствовать рядом дыханье твое.</p>
+            <p class="win-modal__text">Без упреков, без боли, без лишних терзаний</p>
+            <p class="win-modal__text">Ты — мой самый счастливый и светлый рассвет.</p>
+            <p class="win-modal__text">P.S. я знаю, что ты любишь пазлы)))</p>
+            <button class="button button--primary" id="btn-win-restart">Играть снова</button>
+        </div>
+    </div>
+
+    <script type="module" src="/src/app/main.js"></script>
+</body>
+</html>
