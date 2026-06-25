@@ -154,10 +154,13 @@ export class Puzzle {
     }
 
     getMousePos(e) {
-        const rect = this.canvas.getBoundingClientRect();
+        if (!this.cachedRect) {
+            this.cachedRect = this.canvas.getBoundingClientRect();
+        }
+        const rect = this.cachedRect;
         return {
-            x: (e.clientX - rect.left) * this.scaleMultiplier,
-            y: (e.clientY - rect.top) * this.scaleMultiplier,
+            x: rect.width ? (e.clientX - rect.left) * (this.canvas.width / rect.width) : (e.clientX - rect.left) * this.scaleMultiplier,
+            y: rect.height ? (e.clientY - rect.top) * (this.canvas.height / rect.height) : (e.clientY - rect.top) * this.scaleMultiplier,
         };
     }
 
@@ -165,6 +168,7 @@ export class Puzzle {
         e.stopPropagation();
         e.preventDefault();
 
+        this.cachedRect = this.canvas.getBoundingClientRect();
         const pos = this.getMousePos(e);
         this.selected = this.getClickedPiece(pos);
 
@@ -196,6 +200,7 @@ export class Puzzle {
         }
 
         this.selected = null;
+        this.cachedRect = null;
     }
 
     generatePieces() {

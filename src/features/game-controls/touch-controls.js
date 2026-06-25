@@ -1,17 +1,27 @@
 export function addTouchSupport(puzzle) {
     const canvas = puzzle.canvas;
 
+    let cachedRect = null;
+
+    function updateCachedRect() {
+        cachedRect = canvas.getBoundingClientRect();
+    }
+
     function getTouchPos(touch) {
-        const rect = canvas.getBoundingClientRect();
+        if (!cachedRect) {
+            updateCachedRect();
+        }
+        const rect = cachedRect;
         return {
-            x: (touch.clientX - rect.left) * puzzle.scaleMultiplier,
-            y: (touch.clientY - rect.top) * puzzle.scaleMultiplier
+            x: rect.width ? (touch.clientX - rect.left) * (canvas.width / rect.width) : (touch.clientX - rect.left) * puzzle.scaleMultiplier,
+            y: rect.height ? (touch.clientY - rect.top) * (canvas.height / rect.height) : (touch.clientY - rect.top) * puzzle.scaleMultiplier
         };
     }
 
     canvas.addEventListener('touchstart', (e) => {
         e.preventDefault();
         if (e.touches.length !== 1) return;
+        updateCachedRect();
         const t = getTouchPos(e.touches[0]);
         puzzle.selected = puzzle.getClickedPiece(t);
         if (puzzle.selected) {
@@ -37,5 +47,6 @@ export function addTouchSupport(puzzle) {
         if (!puzzle.selected) return;
         if (puzzle.selected.isClose()) puzzle.selected.snap();
         puzzle.selected = null;
+        cachedRect = null;
     }, { passive: false });
 }
